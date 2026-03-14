@@ -7,6 +7,13 @@ The project uses **OpenStreetMap + Leaflet.js** for maps and the **OpenTripMap A
 
 ---
 
+![HTML](https://img.shields.io/badge/HTML-orange)
+![CSS](https://img.shields.io/badge/CSS-blue)
+![JavaScript](https://img.shields.io/badge/JavaScript-yellow)
+![PHP](https://img.shields.io/badge/PHP-purple)
+![MySQL](https://img.shields.io/badge/MySQL-lightblue)
+
+
 ## ✨ Features
 
 * 📍 Detects user's **current location**
