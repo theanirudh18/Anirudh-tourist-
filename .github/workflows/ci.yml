@@ -1,4 +1,3 @@
-
 name: Tourist Project CI
 
 on:
@@ -8,7 +7,6 @@ on:
 jobs:
   check-project:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -20,5 +18,3 @@ jobs:
           test -f project.css
           test -f project.js
           echo "All required project files exist!"
-
-.
