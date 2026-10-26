@@ -1,0 +1,20 @@
+{
+  "name": "anirudh-tourist-",
+  "version": "1.0.0",
+  "description": "KhojKr is a web application that helps users discover **tourist places near their current location** within a selected radius. Users can enter a distance, choose a category, and instantly explore nearby attractions on an interactive map.",
+  "main": "project.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "validate:html": "htmlhint \"*.html\"",
+    "validate:js": "eslint project.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0",
+    "htmlhint": "^1.9.2"
+  }
+}

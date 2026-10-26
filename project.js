@@ -140,7 +140,7 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error(error);
       placesList.innerHTML = `<li class="text-red-600">Error fetching places. Try again later.</li>`;
     }
-  }, error => {
+  }, () => {
     alert("Unable to get your location. Make sure location access is allowed.");
   });
 };
