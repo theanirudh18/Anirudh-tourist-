@@ -1,3 +1,4 @@
+
 name: Tourist Project CI
 
 on:
@@ -26,3 +27,6 @@ jobs:
 
       - name: Validate JavaScript
         run: npm run validate:js
+
+      - name: Build Docker image
+        run: docker build -t anirudh-tourist .
