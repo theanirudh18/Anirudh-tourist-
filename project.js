@@ -1,7 +1,70 @@
 document.addEventListener("DOMContentLoaded", function () {
-  const apiKey = 'b214498003msh9e825648a66a8eep1e163djsn397a59057b80';
   let map, clusterGroup, radiusCircle, centerMarker, currentRouteLine;
   let searchCenterCoords = null; // [lat, lon]
+  let currentDetailPlace = null;
+
+  // --- API Key Management (Secure / No hardcoded keys in Git) ---
+  const API_KEY_STORAGE = 'khojkr_rapidapi_key';
+
+  function getApiKey() {
+    if (window.KHOJKR_CONFIG && typeof window.KHOJKR_CONFIG.RAPIDAPI_KEY === 'string' && window.KHOJKR_CONFIG.RAPIDAPI_KEY.trim() !== '') {
+      return window.KHOJKR_CONFIG.RAPIDAPI_KEY.trim();
+    }
+    const stored = localStorage.getItem(API_KEY_STORAGE);
+    return stored ? stored.trim() : '';
+  }
+
+  function openKeyModal(alertMessage = '') {
+    const modal = document.getElementById('apiKeyModal');
+    const input = document.getElementById('rapidApiKeyInput');
+    if (modal) modal.classList.remove('hidden');
+    if (input) {
+      input.value = getApiKey();
+      input.focus();
+    }
+    if (alertMessage) {
+      alert(alertMessage);
+    }
+  }
+
+  function closeKeyModal() {
+    const modal = document.getElementById('apiKeyModal');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  const openKeyBtn = document.getElementById('openKeyBtn');
+  if (openKeyBtn) openKeyBtn.addEventListener('click', () => openKeyModal());
+
+  const closeKeyBtn = document.getElementById('closeKeyBtn');
+  if (closeKeyBtn) closeKeyBtn.addEventListener('click', closeKeyModal);
+
+  const apiKeyBackdrop = document.getElementById('apiKeyBackdrop');
+  if (apiKeyBackdrop) apiKeyBackdrop.addEventListener('click', closeKeyModal);
+
+  const saveKeyBtn = document.getElementById('saveKeyBtn');
+  if (saveKeyBtn) {
+    saveKeyBtn.addEventListener('click', function () {
+      const input = document.getElementById('rapidApiKeyInput');
+      const val = input ? input.value.trim() : '';
+      if (!val) {
+        alert("Please enter a valid RapidAPI Key.");
+        return;
+      }
+      localStorage.setItem(API_KEY_STORAGE, val);
+      alert("RapidAPI key saved securely in your browser's local storage!");
+      closeKeyModal();
+    });
+  }
+
+  const clearKeyBtn = document.getElementById('clearKeyBtn');
+  if (clearKeyBtn) {
+    clearKeyBtn.addEventListener('click', function () {
+      localStorage.removeItem(API_KEY_STORAGE);
+      const input = document.getElementById('rapidApiKeyInput');
+      if (input) input.value = '';
+      alert("Saved RapidAPI key removed.");
+    });
+  }
 
   // --- Saved Places (localStorage) ---
   const STORAGE_KEY = 'khojkr_saved_places';
@@ -104,6 +167,15 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       });
 
+      const detailsBtn = document.createElement('button');
+      detailsBtn.type = "button";
+      detailsBtn.className = "text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-medium px-2.5 py-1 rounded-md transition";
+      detailsBtn.textContent = "📖 Guide";
+      detailsBtn.addEventListener('click', () => {
+        closeSavedDrawer();
+        openPlaceDetails(place);
+      });
+
       const dirBtn = document.createElement('a');
       dirBtn.href = `https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lon}`;
       dirBtn.target = "_blank";
@@ -112,6 +184,7 @@ document.addEventListener("DOMContentLoaded", function () {
       dirBtn.textContent = "🧭 Directions";
 
       btnRow.appendChild(viewBtn);
+      btnRow.appendChild(detailsBtn);
       btnRow.appendChild(dirBtn);
 
       info.appendChild(title);
@@ -136,6 +209,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function updateSavedUI() {
     updateSavedBadge();
     renderSavedDrawer();
+    updateDetailModalSaveBtn();
   }
 
   function openSavedDrawer() {
@@ -149,6 +223,142 @@ document.addEventListener("DOMContentLoaded", function () {
   function closeSavedDrawer() {
     const modal = document.getElementById('savedModal');
     if (modal) modal.classList.add('hidden');
+  }
+
+  // --- Place Details & Photos Modal (In-App Guide) ---
+  function updateDetailModalSaveBtn() {
+    if (!currentDetailPlace) return;
+    const saveBtn = document.getElementById('detailSaveBtn');
+    const heartIcon = document.getElementById('detailHeartIcon');
+    const saveText = document.getElementById('detailSaveText');
+    const saved = isPlaceSaved(currentDetailPlace.name);
+    if (heartIcon) heartIcon.textContent = saved ? '❤️' : '🤍';
+    if (saveText) saveText.textContent = saved ? 'Saved' : 'Save';
+    if (saveBtn) {
+      saveBtn.className = saved
+        ? 'bg-red-500 hover:bg-red-600 text-white font-medium py-2.5 px-4 rounded-xl flex items-center gap-1.5 text-sm transition'
+        : 'bg-red-50 hover:bg-red-100 text-red-600 font-medium py-2.5 px-4 rounded-xl flex items-center gap-1.5 text-sm transition';
+    }
+  }
+
+  async function openPlaceDetails(place) {
+    currentDetailPlace = place;
+    const modal = document.getElementById('detailsModal');
+    const titleEl = document.getElementById('detailTitle');
+    const badgeEl = document.getElementById('detailCategoryBadge');
+    const subtitleEl = document.getElementById('detailSubtitle');
+    const heroImg = document.getElementById('detailHeroImg');
+    const extractEl = document.getElementById('detailExtract');
+    const loadingEl = document.getElementById('detailLoading');
+    const contentEl = document.getElementById('detailContent');
+    const dirBtn = document.getElementById('detailDirectionsBtn');
+    const wikiBtn = document.getElementById('detailWikiBtn');
+
+    if (!modal) return;
+    modal.classList.remove('hidden');
+
+    // Default placeholders
+    if (titleEl) titleEl.textContent = place.name;
+    if (badgeEl) badgeEl.textContent = place.kinds ? place.kinds.split(',')[0].trim() : 'Attraction';
+    if (subtitleEl) subtitleEl.textContent = `${place.distance ? `${place.distance} km away` : 'Tourist Attraction'}`;
+    if (heroImg) {
+      heroImg.src = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80';
+    }
+    if (dirBtn) {
+      dirBtn.href = `https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lon}`;
+    }
+    if (wikiBtn) {
+      wikiBtn.href = `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(place.name)}`;
+    }
+
+    updateDetailModalSaveBtn();
+
+    if (loadingEl) loadingEl.classList.remove('hidden');
+    if (contentEl) contentEl.classList.add('hidden');
+
+    try {
+      // Clean search title: strip parenthesis or city suffixes
+      const cleanTitle = place.name.replace(/\(.*?\)/g, '').trim();
+      const wikiUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(cleanTitle)}`;
+      const res = await fetch(wikiUrl);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.extract) {
+          if (extractEl) extractEl.textContent = data.extract;
+          if (heroImg && (data.originalimage?.source || data.thumbnail?.source)) {
+            heroImg.src = data.originalimage?.source || data.thumbnail?.source;
+          }
+          if (wikiBtn && data.content_urls?.desktop?.page) {
+            wikiBtn.href = data.content_urls.desktop.page;
+          }
+        } else {
+          showFallbackDescription(extractEl, place);
+        }
+      } else {
+        // Fallback: search Wikipedia API
+        const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(cleanTitle)}&format=json&origin=*`;
+        const searchRes = await fetch(searchUrl);
+        const searchData = await searchRes.json();
+        const topHit = searchData?.query?.search?.[0];
+
+        if (topHit && topHit.title) {
+          const secondRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(topHit.title)}`);
+          if (secondRes.ok) {
+            const secondData = await secondRes.json();
+            if (extractEl) extractEl.textContent = secondData.extract || topHit.snippet.replace(/<[^>]+>/g, '');
+            if (heroImg && (secondData.originalimage?.source || secondData.thumbnail?.source)) {
+              heroImg.src = secondData.originalimage?.source || secondData.thumbnail?.source;
+            }
+            if (wikiBtn && secondData.content_urls?.desktop?.page) {
+              wikiBtn.href = secondData.content_urls.desktop.page;
+            }
+          } else {
+            showFallbackDescription(extractEl, place);
+          }
+        } else {
+          showFallbackDescription(extractEl, place);
+        }
+      }
+    } catch {
+      showFallbackDescription(extractEl, place);
+    } finally {
+      if (loadingEl) loadingEl.classList.add('hidden');
+      if (contentEl) contentEl.classList.remove('hidden');
+    }
+  }
+
+  function showFallbackDescription(extractEl, place) {
+    if (extractEl) {
+      extractEl.innerHTML = `
+        A notable ${place.kinds ? `<b>${escapeHtml(place.kinds)}</b>` : 'tourist destination'} located near this area. 
+        You can navigate using the directions button or explore historical travel guides online.
+      `;
+    }
+  }
+
+  function closeDetailsModal() {
+    const modal = document.getElementById('detailsModal');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  const closeDetailsBtn = document.getElementById('closeDetailsBtn');
+  if (closeDetailsBtn) closeDetailsBtn.addEventListener('click', closeDetailsModal);
+
+  const detailsBackdrop = document.getElementById('detailsBackdrop');
+  if (detailsBackdrop) detailsBackdrop.addEventListener('click', closeDetailsModal);
+
+  const detailSaveBtn = document.getElementById('detailSaveBtn');
+  if (detailSaveBtn) {
+    detailSaveBtn.addEventListener('click', function () {
+      if (!currentDetailPlace) return;
+      if (isPlaceSaved(currentDetailPlace.name)) {
+        removeSavedPlace(currentDetailPlace.name);
+      } else {
+        savePlace(currentDetailPlace);
+      }
+      updateSavedUI();
+    });
   }
 
   // --- Map Initialization ---
@@ -258,6 +468,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const radiusMeters = radiusKm * 1000;
     searchCenterCoords = [lat, lon];
 
+    const activeApiKey = getApiKey();
+    if (!activeApiKey) {
+      openKeyModal("A RapidAPI Key is required to fetch OpenTripMap attractions. Please paste your key below (saved only in your browser).");
+      return;
+    }
+
     mapSection.classList.remove('hidden');
     setTimeout(() => {
       if (map) map.invalidateSize();
@@ -304,12 +520,15 @@ document.addEventListener("DOMContentLoaded", function () {
       const response = await fetch(url, {
         method: "GET",
         headers: {
-          "X-RapidAPI-Key": apiKey,
+          "X-RapidAPI-Key": activeApiKey,
           "X-RapidAPI-Host": "opentripmap-places-v1.p.rapidapi.com"
         }
       });
 
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          throw new Error("Invalid or expired RapidAPI Key. Please check the key in API Key Settings.");
+        }
         throw new Error(`API request failed with status: ${response.status}`);
       }
 
@@ -349,30 +568,69 @@ document.addEventListener("DOMContentLoaded", function () {
           .map(k => k.replace(/_/g, ' '))
           .join(', ');
 
+        const placeObj = { name, lat: placeLat, lon: placeLon, distance, kinds };
+
         bounds.extend([placeLat, placeLon]);
 
         // Place marker with category-styled icon
         const pinIcon = getCategoryPin(rawKinds);
-        const marker = L.marker([placeLat, placeLon], { icon: pinIcon }).bindPopup(`
-          <div style="min-width: 190px; padding: 4px;">
-            <h4 style="font-weight: 700; font-size: 14px; margin: 0 0 4px; color: #1e3a8a;">${escapeHtml(name)}</h4>
-            <p style="font-size: 12px; color: #64748b; margin: 0 0 8px;">Distance: ${distance} km ${kinds ? `• ${escapeHtml(kinds)}` : ''}</p>
-            <div style="display: flex; gap: 6px; align-items: center;">
-              <a href="https://www.google.com/maps/dir/?api=1&destination=${placeLat},${placeLon}" 
-                 target="_blank" 
-                 rel="noopener noreferrer"
-                 style="font-size: 11px; background-color: #2563eb; color: white; padding: 4px 8px; border-radius: 6px; text-decoration: none;">
-                🧭 Directions
-              </a>
-              <a href="https://www.google.com/search?q=${encodeURIComponent(name)}+tourism&tbm=isch" 
-                 target="_blank" 
-                 rel="noopener noreferrer"
-                 style="font-size: 11px; background-color: #f1f5f9; color: #334155; padding: 4px 8px; border-radius: 6px; text-decoration: none;">
-                🖼️ Photos
-              </a>
-            </div>
-          </div>
-        `);
+        const marker = L.marker([placeLat, placeLon], { icon: pinIcon });
+
+        // Build popup content safely
+        const popupDiv = document.createElement('div');
+        popupDiv.style.minWidth = '190px';
+        popupDiv.style.padding = '4px';
+
+        const popupTitle = document.createElement('h4');
+        popupTitle.style.fontWeight = '700';
+        popupTitle.style.fontSize = '14px';
+        popupTitle.style.margin = '0 0 4px';
+        popupTitle.style.color = '#1e3a8a';
+        popupTitle.textContent = name;
+
+        const popupMeta = document.createElement('p');
+        popupMeta.style.fontSize = '12px';
+        popupMeta.style.color = '#64748b';
+        popupMeta.style.margin = '0 0 8px';
+        popupMeta.textContent = `Distance: ${distance} km ${kinds ? `• ${kinds}` : ''}`;
+
+        const popupActions = document.createElement('div');
+        popupActions.style.display = 'flex';
+        popupActions.style.gap = '6px';
+        popupActions.style.alignItems = 'center';
+
+        const guideBtn = document.createElement('button');
+        guideBtn.type = 'button';
+        guideBtn.style.fontSize = '11px';
+        guideBtn.style.backgroundColor = '#4f46e5';
+        guideBtn.style.color = 'white';
+        guideBtn.style.padding = '4px 8px';
+        guideBtn.style.borderRadius = '6px';
+        guideBtn.style.border = 'none';
+        guideBtn.style.cursor = 'pointer';
+        guideBtn.textContent = '📖 Details';
+        guideBtn.addEventListener('click', () => openPlaceDetails(placeObj));
+
+        const dirLink = document.createElement('a');
+        dirLink.href = `https://www.google.com/maps/dir/?api=1&destination=${placeLat},${placeLon}`;
+        dirLink.target = '_blank';
+        dirLink.rel = 'noopener noreferrer';
+        dirLink.style.fontSize = '11px';
+        dirLink.style.backgroundColor = '#2563eb';
+        dirLink.style.color = 'white';
+        dirLink.style.padding = '4px 8px';
+        dirLink.style.borderRadius = '6px';
+        dirLink.style.textDecoration = 'none';
+        dirLink.textContent = '🧭 Routes';
+
+        popupActions.appendChild(guideBtn);
+        popupActions.appendChild(dirLink);
+
+        popupDiv.appendChild(popupTitle);
+        popupDiv.appendChild(popupMeta);
+        popupDiv.appendChild(popupActions);
+
+        marker.bindPopup(popupDiv);
         clusterGroup.addLayer(marker);
 
         // Place item in sidebar list
@@ -399,6 +657,17 @@ document.addEventListener("DOMContentLoaded", function () {
         const actionsDiv = document.createElement('div');
         actionsDiv.className = "flex items-center gap-1 flex-shrink-0";
 
+        // Details Guide button
+        const listDetailsBtn = document.createElement('button');
+        listDetailsBtn.type = "button";
+        listDetailsBtn.className = "p-1.5 rounded-lg text-sm text-indigo-600 hover:bg-indigo-100 transition";
+        listDetailsBtn.title = "View in-app guide & photos";
+        listDetailsBtn.textContent = "📖";
+        listDetailsBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openPlaceDetails(placeObj);
+        });
+
         // Save / Bookmark button
         const saveBtn = document.createElement('button');
         saveBtn.type = "button";
@@ -414,32 +683,23 @@ document.addEventListener("DOMContentLoaded", function () {
           if (isPlaceSaved(name)) {
             removeSavedPlace(name);
           } else {
-            savePlace({ name, lat: placeLat, lon: placeLon, distance, kinds });
+            savePlace(placeObj);
           }
           updateSaveIcon();
         });
 
         // Direction link
-        const dirLink = document.createElement('a');
-        dirLink.href = `https://www.google.com/maps/dir/?api=1&destination=${placeLat},${placeLon}`;
-        dirLink.target = "_blank";
-        dirLink.rel = "noopener noreferrer";
-        dirLink.title = "Get directions in Google Maps";
-        dirLink.className = "p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg text-sm";
-        dirLink.textContent = "🧭";
+        const listDirLink = document.createElement('a');
+        listDirLink.href = `https://www.google.com/maps/dir/?api=1&destination=${placeLat},${placeLon}`;
+        listDirLink.target = "_blank";
+        listDirLink.rel = "noopener noreferrer";
+        listDirLink.title = "Get directions in Google Maps";
+        listDirLink.className = "p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg text-sm";
+        listDirLink.textContent = "🧭";
 
-        // Image link
-        const photoLink = document.createElement('a');
-        photoLink.href = `https://www.google.com/search?q=${encodeURIComponent(name)}+tourism&tbm=isch`;
-        photoLink.target = "_blank";
-        photoLink.rel = "noopener noreferrer";
-        photoLink.title = "View images on Google";
-        photoLink.className = "p-1.5 text-gray-600 hover:bg-gray-200 rounded-lg text-sm";
-        photoLink.textContent = "🖼️";
-
+        actionsDiv.appendChild(listDetailsBtn);
         actionsDiv.appendChild(saveBtn);
-        actionsDiv.appendChild(dirLink);
-        actionsDiv.appendChild(photoLink);
+        actionsDiv.appendChild(listDirLink);
 
         row.appendChild(textDiv);
         row.appendChild(actionsDiv);
@@ -460,7 +720,7 @@ document.addEventListener("DOMContentLoaded", function () {
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
     } catch (err) {
       console.error(err);
-      setStatus("Error fetching tourist places. Please verify your connection or try again later.", true);
+      setStatus(err.message || "Error fetching tourist places. Please verify your connection or API key.", true);
     }
   }
 
