@@ -459,3 +459,29 @@ img {
     line-height: 1.5;
 }
 
+
+/* Custom Category Pin Styling */
+.category-pin-wrapper {
+    position: relative;
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.category-pin-wrapper:hover {
+    transform: scale(1.15) translateY(-3px);
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+    z-index: 1000 !important;
+}
+
+/* Saved Item Card */
+.saved-item-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 0.875rem 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.saved-item-card:hover {
+    border-color: #93c5fd;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+}
