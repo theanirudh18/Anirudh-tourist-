@@ -222,15 +222,14 @@ input:focus, select:focus, button:focus {
     border: 2px solid white;
 }
 
-/* Add smooth transitions */
-* {
-    transition: all 0.3s ease;
+/* Smooth transitions on interactive UI elements */
+a, button, input, select, .tour-card, .place-item {
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Optimize image loading */
+/* Responsive images */
 img {
-    padding: lazy;
-    width: 100%;
+    max-width: 100%;
     height: auto;
 }
 

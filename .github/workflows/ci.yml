@@ -1,12 +1,15 @@
-
-name: Tourist Project CI
+name: Tourist Project CI/CD
 
 on:
   push:
+    branches: [ main ]
   pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  check-project:
+  test-and-build:
+    name: Validate, Build & Test Docker Image
     runs-on: ubuntu-latest
 
     steps:
@@ -28,5 +31,26 @@ jobs:
       - name: Validate JavaScript
         run: npm run validate:js
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build Docker image
-        run: docker build -t anirudh-tourist .
+        run: docker build -t anirudh-tourist:latest .
+
+      - name: Run Docker Container Smoke Test
+        run: |
+          docker run -d --name tourist-app -p 8080:80 anirudh-tourist:latest
+          sleep 3
+          echo "Testing index.html endpoint..."
+          curl --fail --silent --show-error http://localhost:8080/ > /dev/null
+          echo "Testing project.html endpoint..."
+          curl --fail --silent --show-error http://localhost:8080/project.html > /dev/null
+          echo "Testing login.html endpoint..."
+          curl --fail --silent --show-error http://localhost:8080/login.html > /dev/null
+          echo "Testing project.css endpoint..."
+          curl --fail --silent --show-error http://localhost:8080/project.css > /dev/null
+          echo "Testing project.js endpoint..."
+          curl --fail --silent --show-error http://localhost:8080/project.js > /dev/null
+          echo "All container endpoints verified successfully!"
+          docker stop tourist-app
+          docker rm tourist-app
