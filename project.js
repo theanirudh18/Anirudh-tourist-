@@ -857,4 +857,56 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
   });
+
+  // Quick Search Destination Chips
+  const quickChips = document.querySelectorAll('.quick-chip[data-city]');
+  quickChips.forEach(chip => {
+    chip.addEventListener('click', function () {
+      const city = this.getAttribute('data-city');
+      const cityInput = document.getElementById('searchCity');
+      if (cityInput) {
+        cityInput.value = city;
+      }
+      quickChips.forEach(c => c.classList.remove('ring-2', 'ring-orange-400', 'bg-white/30'));
+      this.classList.add('ring-2', 'ring-orange-400', 'bg-white/30');
+
+      window.findPlaces();
+
+      const mapSection = document.getElementById('mapSection');
+      if (mapSection) {
+        setTimeout(() => {
+          mapSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
+      }
+    });
+  });
+
+  // Surprise Me Random City Generator
+  const surpriseBtn = document.getElementById('surpriseBtn');
+  if (surpriseBtn) {
+    const surpriseDestinations = [
+      'Jaipur', 'Agra', 'Goa', 'Udaipur', 'Varanasi',
+      'Kochi', 'Amritsar', 'Leh', 'Hampi', 'Manali',
+      'Mysore', 'Ooty', 'Jodhpur', 'Rishikesh', 'Shimla'
+    ];
+    surpriseBtn.addEventListener('click', function () {
+      const randomCity = surpriseDestinations[Math.floor(Math.random() * surpriseDestinations.length)];
+      const cityInput = document.getElementById('searchCity');
+      if (cityInput) {
+        cityInput.value = randomCity;
+      }
+      quickChips.forEach(c => c.classList.remove('ring-2', 'ring-orange-400', 'bg-white/30'));
+      this.classList.add('animate-bounce');
+      setTimeout(() => this.classList.remove('animate-bounce'), 700);
+
+      window.findPlaces();
+
+      const mapSection = document.getElementById('mapSection');
+      if (mapSection) {
+        setTimeout(() => {
+          mapSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
+      }
+    });
+  }
 });
