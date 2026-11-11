@@ -485,3 +485,18 @@ img {
     border-color: #93c5fd;
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
 }
+
+/* Modal Stacking Fix: Ensure modals sit above Leaflet map (Leaflet controls/popups use z-index 400-1000) */
+#detailsModal, #savedModal, #apiKeyModal {
+    z-index: 99999 !important;
+}
+
+#detailsBackdrop, #savedBackdrop, #apiKeyBackdrop {
+    z-index: 99998 !important;
+}
+
+#detailsModal > div:last-child, 
+#savedModal > div:last-child, 
+#apiKeyModal > div:last-child {
+    z-index: 100000 !important;
+}

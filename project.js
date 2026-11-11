@@ -15,6 +15,8 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function openKeyModal(alertMessage = '') {
+    if (map) map.closePopup();
+    document.body.classList.add('overflow-hidden');
     const modal = document.getElementById('apiKeyModal');
     const input = document.getElementById('rapidApiKeyInput');
     if (modal) modal.classList.remove('hidden');
@@ -30,6 +32,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function closeKeyModal() {
     const modal = document.getElementById('apiKeyModal');
     if (modal) modal.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
   }
 
   const openKeyBtn = document.getElementById('openKeyBtn');
@@ -213,6 +216,8 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function openSavedDrawer() {
+    if (map) map.closePopup();
+    document.body.classList.add('overflow-hidden');
     const modal = document.getElementById('savedModal');
     if (modal) {
       modal.classList.remove('hidden');
@@ -223,6 +228,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function closeSavedDrawer() {
     const modal = document.getElementById('savedModal');
     if (modal) modal.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
   }
 
   // --- Place Details & Photos Modal (In-App Guide) ---
@@ -242,6 +248,8 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   async function openPlaceDetails(place) {
+    if (map) map.closePopup();
+    document.body.classList.add('overflow-hidden');
     currentDetailPlace = place;
     const modal = document.getElementById('detailsModal');
     const titleEl = document.getElementById('detailTitle');
@@ -340,6 +348,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function closeDetailsModal() {
     const modal = document.getElementById('detailsModal');
     if (modal) modal.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
   }
 
   const closeDetailsBtn = document.getElementById('closeDetailsBtn');

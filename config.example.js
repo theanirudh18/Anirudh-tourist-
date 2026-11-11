@@ -4,3 +4,4 @@
 window.KHOJKR_CONFIG = {
   RAPIDAPI_KEY: "" // e.g. "your_rapidapi_key_here"
 };
+
